@@ -88,10 +88,8 @@ struct CustomButtonStyle: ButtonStyle {
             .background(configuration.isPressed ? Color.gray.opacity(0.1) : Color.clear)
             .cornerRadius(8)
             .scaleEffect(configuration.isPressed ? 0.99 : 1.0)
-//            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
-
 
 #Preview {
     MarketIndexesView(model: .dumy)
