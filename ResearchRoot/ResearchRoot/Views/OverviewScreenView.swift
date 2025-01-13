@@ -8,40 +8,45 @@
 import SwiftUI
 
 class OverviewScreenViewModel: ObservableObject, @unchecked Sendable {
-    enum MarketOverviewSectionState {
-        case loading
-        case data(MarketIndexesViewModel)
-    }
-    
     @Published var isMarketOverviewSectionVisible = false
-//    @Published var isMarketOverviewDataLoading = false
-//    @Published var marketOverviewIndexesViewModel: MarketIndexesViewModel?
-    @Published var marketOverviewSectionState: MarketOverviewSectionState?
+    @Published private var isMarketOverviewDataLoading = false
+    @Published private var marketOverviewData: MarketIndexesViewModel.Data?
+    
+    var marketIndexesViewModel: MarketIndexesViewModel? {
+        if isMarketOverviewDataLoading {
+            return .init(state: .loading)
+        } else if let data = marketOverviewData {
+            return .init(state: .data(data))
+        } else {
+            return nil
+        }
+    }
     
     @MainActor
     func viewDidLoad() async {
-        marketOverviewSectionState = .loading
+        isMarketOverviewDataLoading = true
         try? await Task.sleep(nanoseconds: 2_000_000_000)
         
         withAnimation {
-            marketOverviewSectionState = .data(.dumy)
+            isMarketOverviewDataLoading = false
+            marketOverviewData = .init(
+                asOfDate: "10/12/2024 9:55 AM",
+                indexes: [
+                    .random(name: "S&P 500"),
+                    .random(name: "DJIA"),
+                    .random(name: "NASDAQ")
+                ],
+                indexTapCallback: { marketIndex in
+                    print("Did tap \(marketIndex)")
+                }
+            )
         }
         
         Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
             withAnimation {
-                self.marketOverviewSectionState = .data(
-                    .init(
-                        asOfDate: "10/12/2024 9:55 AM",
-                        indexes: [
-                            .random(name: "S&P 500"),
-                            .random(name: "DJIA"),
-                            .random(name: "NASDAQ")
-                        ],
-                        indexTapCallback: { marketIndex in
-                            print("Did tap \(marketIndex)")
-                        }
-                    )
-                )
+                self.marketOverviewData?.indexes[0].value = String(Int.random(in: 1000...10000))
+                self.marketOverviewData?.indexes[1].value = String(Int.random(in: 1000...10000))
+                self.marketOverviewData?.indexes[2].value = String(Int.random(in: 1000...10000))
             }
         }
     }
@@ -55,14 +60,9 @@ struct OverviewScreenView: View {
             ScrollView(.vertical) {
                 VStack {
                     if viewModel.isMarketOverviewSectionVisible {
-                        if let state = viewModel.marketOverviewSectionState {
+                        if let marketOverviewSectionData = viewModel.marketIndexesViewModel {
                             Section("Market overview") {
-                                switch state {
-                                case .loading:
-                                    ProgressView()
-                                case .data(let model):
-                                    MarketIndexesView(model: model)
-                                }
+                                MarketIndexesView(model: marketOverviewSectionData)
                             }
                         }
                     }

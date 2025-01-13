@@ -8,9 +8,18 @@
 import SwiftUI
 
 struct MarketIndexesViewModel {
-    let asOfDate: String
-    let indexes: [MarketIndexViewModel]
-    let indexTapCallback: (MarketIndexViewModel) -> Void
+    enum State {
+        case loading
+        case data(Data)
+    }
+    
+    struct Data {
+        let asOfDate: String
+        var indexes: [MarketIndexViewModel]
+        let indexTapCallback: (MarketIndexViewModel) -> Void
+    }
+    
+    let state: State
 }
 
 struct MarketIndexesView: View {
@@ -19,49 +28,57 @@ struct MarketIndexesView: View {
     @State private var widths: [PartialKeyPath<MarketIndexViewModel>: CGFloat] = [:]
     
     var body: some View {
-        VStack {
-            HStack {
-                Text("as of \(model.asOfDate)")
-                    .italic()
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-                
-            ForEach(model.indexes) { index in
-                Button {
-                    model.indexTapCallback(index)
-                } label: {
-                    MarketIndexView(
-                        model: .init(
-                            name: index.name,
-                            nameWidth: widths[\.name, default: 0],
-                            chart: index.chart,
-                            value: index.value,
-                            valueWidth: widths[\.value, default: 0],
-                            diffs: index.diffs
-                        )
-                    )
+        switch model.state {
+        case .loading:
+            ProgressView()
+        case .data(let data):
+            VStack {
+                HStack {
+                    Text("as of \(data.asOfDate)")
+                        .italic()
+                        .foregroundStyle(.secondary)
+                    Spacer()
                 }
-//                .buttonStyle(.plain)
-                .buttonStyle(CustomButtonStyle())
+                    
+                ForEach(data.indexes) { index in
+                    Button {
+                        data.indexTapCallback(index)
+                    } label: {
+                        MarketIndexView(
+                            model: .init(
+                                name: index.name,
+                                nameWidth: widths[\.name, default: 0],
+                                chart: index.chart,
+                                value: index.value,
+                                valueWidth: widths[\.value, default: 0],
+                                diffs: index.diffs
+                            )
+                        )
+                    }
+                    .buttonStyle(CustomButtonStyle())
+                }
             }
-        }
-        .dynamicColumnSize(items: model.indexes, keyPath: \.name, storage: $widths) {
-            MarketIndexView.nameView($0)
-        }
-        .dynamicColumnSize(items: model.indexes, keyPath: \.value, storage: $widths) {
-            MarketIndexView.valueView($0)
+            .dynamicColumnSize(items: data.indexes, keyPath: \.name, storage: $widths) {
+                MarketIndexView.nameView($0)
+            }
+            .dynamicColumnSize(items: data.indexes, keyPath: \.value, storage: $widths) {
+                MarketIndexView.valueView($0)
+            }
         }
     }
 }
 
 extension MarketIndexesViewModel {
     static let dumy = MarketIndexesViewModel(
-        asOfDate: "10/12/2024 9:55 AM",
-        indexes: [.sp500, .djia, .nasdaq],
-        indexTapCallback: { marketIndex in
-            print("Did tap \(marketIndex)")
-        }
+        state: .data(
+            .init(
+                asOfDate: "10/12/2024 9:55 AM",
+                indexes: [.sp500, .djia, .nasdaq],
+                indexTapCallback: { marketIndex in
+                    print("Did tap \(marketIndex)")
+                }
+            )
+        )
     )
 }
 
@@ -71,7 +88,7 @@ struct CustomButtonStyle: ButtonStyle {
             .background(configuration.isPressed ? Color.gray.opacity(0.1) : Color.clear)
             .cornerRadius(8)
             .scaleEffect(configuration.isPressed ? 0.99 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+//            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 

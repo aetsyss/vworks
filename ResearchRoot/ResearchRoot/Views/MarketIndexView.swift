@@ -22,7 +22,7 @@ struct MarketIndexViewModel: Identifiable {
     let name: String
     let nameWidth: CGFloat
     let chart: Chart
-    let value: String
+    var value: String
     let valueWidth: CGFloat
     let diffs: [StyledText]
     
